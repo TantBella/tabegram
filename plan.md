@@ -11,99 +11,107 @@ Build a greenfield Instagram-like web application (Tabegram) with 1960/70s flowe
 
 ---
 
-## Implementation Order
+## Implementation Status
 
-### Phase 1: Backend (.NET)
-
-**P1-1: Project Scaffolding**
-- Create `Web` project via `dotnet new webapi`
-- Install NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite`, `Microsoft.EntityFrameworkCore.Design`, `Microsoft.AspNetCore.Authentication.JwtBearer`, `System.IdentityModel.Tokens.Jwt`
-- Configure `appsettings.json` with: `ConnectionStrings:Default`, JWT settings (Key, Issuer, Audience, ExpiryMinutes), `Uploads:BasePath`
-- Configure `appsettings.Development.json` with a dev JWT key (min 32 chars)
-
-**P1-2: Data Models & DbContext**
-- Create entities: `User` (id, username, passwordHash, createdAt), `Post` (id, userId, imagePath, description, createdAt), `Like` (id, postId, userId, createdAt)
-- Build `AppDbContext` with Fluent API: unique index on `Username`, unique index on `(PostId, UserId)` for Likes, cascade delete rules
-- Run migrations: `dotnet ef migrations add InitialCreate && dotnet ef database update`
-
-**P1-3: Auth Service**
-- Implement PBKDF2 hashing: 310k iterations, SHA-256, 32-byte salt, format: `base64(salt):base64(hash)`
-- Create `IAuthService`/`AuthService`: `RegisterAsync()`, `LoginAsync()`, `VerifyPasswordAsync()`
-- Implement JWT generation with claims: `sub` (userId), `unique_name` (username), signed with HmacSha256
-- Register in DI
-
-**P1-4: Auth Endpoints**
-- `POST /auth/register` — Request: `{username, password}`, Response: `{userId, username, token}`, 201 on success, 409 on duplicate username
-- `POST /auth/login` — Request: `{username, password}`, Response: `{userId, username, token}`, 401 on invalid credentials
-
-**P1-5: Image Service**
-- Create `IImageService`/`ImageService`: `SaveImageAsync(file)`, `ValidateImageAsync(file)`
-- Validation: MIME types (jpg, png, gif, webp), max 10 MB, secure filename
-- Save as `{Guid}{ext}`, return filename only (not full path)
-
-**P1-6: Post Endpoints**
-- `GET /posts?page=1&pageSize=10` — Public, paginated (newest-first), EF projection includes `LikeCount`, `LikedByCurrentUser` (via SQL EXISTS)
-- `POST /posts` — Auth required, multipart (image + description), returns `PostResponse` with 201
-- `POST /posts/{id}/like` — Auth required, toggle like (add if absent, remove if present), returns 200
-- `GET /users/{id}/posts` — Public, list all posts for user
-- `GET /uploads/{filename}` — Serve static image file
-
-**P1-7: Seed Data**
-- Create `DbSeeder.cs`: auto-runs on startup if DB is empty
-- Seed 3 users + 8 posts with mixed distribution
-- Generate placeholder images (solid-color PNGs or simple test images)
-- Seed some likes to make feed more interesting
-
-**P1-8: Program.cs Wiring**
-- Configure JWT authentication middleware
-- Configure CORS if needed (or rely on Vite proxy in dev)
-- Register services (AuthService, PostService, ImageService)
-- Extension methods: `app.MapAuthEndpoints()`, `app.MapPostEndpoints()`, etc.
-- Seed DB on startup
-- Add `public partial class Program { }` for test factory
+✅ **Phase 1: Backend (.NET)** - COMPLETE  
+✅ **Phase 2: Frontend (React)** - COMPLETE  
+⏳ **Phase 3: Tests** - PENDING  
 
 ---
 
-### Phase 2: Frontend (React)
+## Implementation Order
 
-**P2-1: Scaffolding**
-- Create React + TypeScript project via `npm create vite@latest App -- --template react-ts`
-- Install: `axios`, `react-router-dom`, `bootstrap`, `react-bootstrap` (optional)
-- Configure `vite.config.ts` with proxy: forward `/posts`, `/auth`, `/users`, `/uploads` → `http://localhost:5000`
+### Phase 1: Backend (.NET) ✅ COMPLETE
 
-**P2-2: Types & API Layer**
-- `src/types/index.ts`: Define `User`, `Post`, `PagedResponse<T>`, `AuthResponse`, `CreatePostRequest`
-- `src/api/client.ts`: Axios instance with request interceptor (attach Bearer token), response interceptor (redirect to `/login` on 401)
-- `src/api/auth.ts`: `register()`, `login()`, `logout()`
-- `src/api/posts.ts`: `getPosts()`, `createPost()`, `toggleLike()`, `getUserPosts()`
+**P1-1: Project Scaffolding** ✅
+- ✅ Created `Web` project via `dotnet new webapi`
+- ✅ Installed NuGet packages
+- ✅ Configured `appsettings.json` and `appsettings.Development.json`
 
-**P2-3: Auth Context & Protected Routing**
-- `src/auth/AuthContext.tsx`: Context with `token`, `userId`, `username`; localStorage persistence; `login()`, `logout()`, `isAuthenticated()`
-- `src/auth/ProtectedRoute.tsx`: Redirect to `/login` if no token
-- `src/App.tsx`: React Router with routes: `/`, `/login`, `/register`, `/new-post`, `/profile/:id`
+**P1-2: Data Models & DbContext** ✅
+- ✅ Created entities: `User`, `Post`, `Like`
+- ✅ Built `AppDbContext` with Fluent API constraints
+- ✅ Ran migrations successfully
 
-**P2-4: Auth Pages**
-- `LoginPage.tsx`: Form (username/password), API call, token storage, redirect to feed
-- `RegisterPage.tsx`: Form (username/password), validation, API call, redirect to login
+**P1-3: Auth Service** ✅
+- ✅ Implemented PBKDF2 hashing (310k iterations, SHA-256, 32-byte salt)
+- ✅ Created `IAuthService`/`AuthService` with full auth flow
+- ✅ JWT generation with proper claims and signing
 
-**P2-5: Feed Pages**
-- `PostCard.tsx`: Display image, description, author, timestamp, like count, `LikeButton`
-- `LikeButton.tsx`: Button with heart icon, toggle like on click, show count
-- `PostFeed.tsx`: Fetch posts, render PostCard list, pagination
-- `Pagination.tsx`: Bootstrap pagination component
-- `FeedPage.tsx`: Wraps PostFeed
+**P1-4: Auth Endpoints** ✅
+- ✅ `POST /auth/register` — 201/409 responses
+- ✅ `POST /auth/login` — 200/401 responses
 
-**P2-6: New Post Page**
-- `NewPostPage.tsx`: File input (image), description textarea, client-side validation (file size, type), multipart upload
+**P1-5: Image Service** ✅
+- ✅ Validation: MIME types, size limits, secure filenames
+- ✅ Saves as Guid + extension
 
-**P2-7: Profile Page**
-- `ProfilePage.tsx`: Fetch `GET /users/{id}/posts`, render grid layout, link to post authors
+**P1-6: Post Endpoints** ✅
+- ✅ `GET /posts` — Paginated, 10 per page default
+- ✅ `POST /posts` — Multipart image + description upload
+- ✅ `POST /posts/{id}/like` — Toggle like endpoint
+- ✅ `GET /users/{id}/posts` — User's post list
+- ✅ `GET /uploads/{filename}` — Image serving
 
-**P2-8: Navbar & Layout**
-- `Navbar.tsx`: Brand (Tabegram with yellow), links to feed, new post, profile, logout
-- `Layout.tsx`: Wraps authenticated pages, renders Navbar
-- `src/styles/theme.css`: Bootstrap variable overrides (yellow, orange, pink, green accents)
-- `src/main.tsx`: Import order — Bootstrap CSS first, then theme.css
+**P1-7: Seed Data** ✅
+- ✅ 3 users (alice, bob, charlie) with test passwords
+- ✅ 8 posts distributed across users
+- ✅ Generated gradient PNG images
+- ✅ Cross-user likes
+
+**P1-8: Program.cs Wiring** ✅
+- ✅ JWT middleware configured
+- ✅ CORS enabled (wildcard for MVP)
+- ✅ Services registered
+- ✅ Seed runs on startup
+
+**Verification:** Backend running on http://localhost:5264, database seeded, all endpoints tested ✅
+
+---
+
+### Phase 2: Frontend (React) ✅ COMPLETE
+
+**P2-1: Scaffolding** ✅
+- ✅ Vite React+TypeScript project
+- ✅ Dependencies: axios, react-router-dom, bootstrap, react-bootstrap
+- ✅ Vite proxy configured for /posts, /auth, /users, /uploads
+
+**P2-2: Types & API Layer** ✅
+- ✅ Full TypeScript types (User, Post, PagedResponse)
+- ✅ Axios client with JWT bearer interceptor
+- ✅ 401 redirect on auth failure
+- ✅ API functions: register, login, getPosts, createPost, toggleLike, getUserPosts
+
+**P2-3: Auth Context & Routing** ✅
+- ✅ AuthContext with localStorage persistence
+- ✅ ProtectedRoute wrapper
+- ✅ React Router with all pages
+
+**P2-4: Auth Pages** ✅
+- ✅ LoginPage with form validation
+- ✅ RegisterPage with password confirmation
+- ✅ Error handling on auth failures
+
+**P2-5: Feed Pages** ✅
+- ✅ PostCard component (image, description, like button)
+- ✅ Paginated feed with bootstrap pagination
+- ✅ Like toggle with optimistic UI updates
+
+**P2-6: New Post Page** ✅
+- ✅ File input with client-side validation (10MB limit)
+- ✅ Multipart form upload
+- ✅ Description textarea
+
+**P2-7: Profile Page** ✅
+- ✅ User's posts grid layout
+- ✅ Fetch from `/users/{id}/posts`
+
+**P2-8: Navbar & Layout** ✅
+- ✅ Navigation bar with links and logout
+- ✅ Layout wrapper for all pages
+- ✅ Bootstrap 5 theme with flower-power colors (yellow, orange, pink, green)
+
+**Verification:** Frontend running on http://localhost:5173, all features tested ✅
 
 ---
 

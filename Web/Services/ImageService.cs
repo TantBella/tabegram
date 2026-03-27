@@ -31,12 +31,28 @@ public class ImageService : IImageService
         var filename = $"{Guid.NewGuid()}{extension}";
         var filePath = Path.Combine(_uploadsPath, filename);
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        try
         {
-            await file.CopyToAsync(stream);
-        }
+            using (var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30)))
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream, cts.Token);
+            }
 
-        return (true, filename, null);
+            return (true, filename, null);
+        }
+        catch (System.OperationCanceledException)
+        {
+            // Clean up incomplete file
+            try { File.Delete(filePath); } catch { }
+            return (false, null, "File upload timed out");
+        }
+        catch (Exception ex)
+        {
+            // Clean up incomplete file
+            try { File.Delete(filePath); } catch { }
+            return (false, null, $"Error saving file: {ex.Message}");
+        }
     }
 
     public async Task<(bool IsValid, string? Error)> ValidateImageAsync(IFormFile file)

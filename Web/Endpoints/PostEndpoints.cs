@@ -44,6 +44,10 @@ public static class PostEndpoints
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Include(p => p.Likes)
+            .ToListAsync();
+
+        var postResponses = posts
             .Select(p => new PostResponse
             {
                 Id = p.Id,
@@ -55,11 +59,11 @@ public static class PostEndpoints
                 LikeCount = p.Likes.Count,
                 LikedByCurrentUser = userId.HasValue && p.Likes.Any(l => l.UserId == userId)
             })
-            .ToListAsync();
+            .ToList();
 
         return Results.Ok(new PagedResponse<PostResponse>
         {
-            Data = posts,
+            Data = postResponses,
             Page = page,
             PageSize = pageSize,
             Total = total
@@ -113,24 +117,29 @@ public static class PostEndpoints
         if (post == null)
             return Results.NotFound();
 
-        var existing = await db.Likes.FirstOrDefaultAsync(l => l.PostId == id && l.UserId == userGuid);
-        if (existing == null)
+        using (var transaction = db.Database.BeginTransaction())
         {
-            var like = new Like
+            var existing = await db.Likes.FirstOrDefaultAsync(l => l.PostId == id && l.UserId == userGuid);
+            if (existing == null)
             {
-                Id = Guid.NewGuid(),
-                PostId = id,
-                UserId = userGuid,
-                CreatedAt = DateTime.UtcNow
-            };
-            db.Likes.Add(like);
-        }
-        else
-        {
-            db.Likes.Remove(existing);
+                var like = new Like
+                {
+                    Id = Guid.NewGuid(),
+                    PostId = id,
+                    UserId = userGuid,
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.Likes.Add(like);
+            }
+            else
+            {
+                db.Likes.Remove(existing);
+            }
+
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
 
-        await db.SaveChangesAsync();
         return Results.Ok();
     }
 
@@ -142,9 +151,13 @@ public static class PostEndpoints
         if (user == null)
             return Results.NotFound();
 
-        var posts = await db.Posts
+        var postsData = await db.Posts
             .Where(p => p.UserId == id)
+            .Include(p => p.Likes)
             .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        var posts = postsData
             .Select(p => new UserPostDto
             {
                 Id = p.Id,
@@ -153,7 +166,7 @@ public static class PostEndpoints
                 CreatedAt = p.CreatedAt,
                 LikeCount = p.Likes.Count
             })
-            .ToListAsync();
+            .ToList();
 
         return Results.Ok(new UserPostsResponse
         {
@@ -163,23 +176,27 @@ public static class PostEndpoints
         });
     }
 
-    private static IResult ServeImage(string filename)
+    private static IResult ServeImage(string filename, IConfiguration config)
     {
-        var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json")
-            .AddJsonFile("appsettings.Development.json", optional: true)
-            .Build();
+        // Prevent path traversal: only allow the filename without directory components
+        var safeFilename = Path.GetFileName(filename);
+        if (string.IsNullOrEmpty(safeFilename) || !safeFilename.Equals(filename))
+            return Results.BadRequest(new { error = "Invalid filename" });
 
         var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), config["Uploads:BasePath"]!);
-        var filePath = Path.Combine(uploadsPath, filename);
+        var filePath = Path.Combine(uploadsPath, safeFilename);
+
+        // Verify the resolved path is within the uploads directory
+        var fullPath = Path.GetFullPath(filePath);
+        var fullUploadsPath = Path.GetFullPath(uploadsPath);
+        if (!fullPath.StartsWith(fullUploadsPath))
+            return Results.BadRequest(new { error = "Invalid file path" });
 
         if (!File.Exists(filePath))
             return Results.NotFound();
 
         var contentType = GetContentType(filePath);
-        var stream = File.OpenRead(filePath);
-        return Results.File(stream, contentType, enableRangeProcessing: true);
+        return Results.File(new System.IO.FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.Read), contentType, enableRangeProcessing: true);
     }
 
     private static string GetContentType(string filePath)
