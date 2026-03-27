@@ -1,0 +1,84 @@
+:root {
+  --bs-primary: #f5c400;
+  --bs-primary-rgb: 245, 196, 0;
+  --bs-secondary: #ff6b35;
+  --bs-secondary-rgb: 255, 107, 53;
+  --bs-info: #ff1654;
+  --bs-info-rgb: 255, 22, 84;
+  --bs-success: #04d9c4;
+  --bs-success-rgb: 4, 217, 196;
+}
+
+body {
+  background: linear-gradient(135deg, #fff9e6 0%, #ffe8f0 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f5c400 !important;
+}
+
+.btn-primary {
+  background-color: #f5c400;
+  border-color: #f5c400;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background-color: #ff6b35;
+  border-color: #ff6b35;
+  color: #fff;
+}
+
+.btn-outline-danger {
+  color: #ff1654;
+  border-color: #ff1654;
+}
+
+.btn-outline-danger:hover {
+  background-color: #ff1654;
+  border-color: #ff1654;
+}
+
+.card {
+  border: 2px solid #f5c400;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.badge {
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.badge.bg-primary {
+  background-color: #f5c400 !important;
+  color: #1a1a1a !important;
+}
+
+.form-control {
+  border-color: #f5c400;
+}
+
+.form-control:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+}
+
+a {
+  color: #ff6b35;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #ff1654;
+  text-decoration: underline;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #1a1a1a;
+}
