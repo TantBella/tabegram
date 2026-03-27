@@ -160,3 +160,4 @@ C:\Users\bella.solomon\Documents\Agent_hackaton\tabegram\Web\bin\Debug\net10.0\S
 C:\Users\bella.solomon\Documents\Agent_hackaton\tabegram\Web\bin\Debug\net10.0\System.Private.Windows.Core.dll
 C:\Users\bella.solomon\Documents\Agent_hackaton\tabegram\Web\bin\Debug\net10.0\System.Private.Windows.GdiPlus.dll
 C:\Users\bella.solomon\Documents\Agent_hackaton\tabegram\Web\bin\Debug\net10.0\runtimes\win\lib\net10.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\bella.solomon\Documents\Agent_hackaton\tabegram\Web\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
